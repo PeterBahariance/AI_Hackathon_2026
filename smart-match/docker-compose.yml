@@ -1,0 +1,11 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./data:/app/data
+      - ./public:/app/public
+    environment:
+      - WATCHPACK_POLLING=true
