@@ -1,45 +1,74 @@
 "use client";
 
 import Link from "next/link";
+import { useState, useEffect, useRef } from "react";
 
 const modules = [
   {
     title: "Volunteers",
     href: "/supply",
-    description: "Board member profiles, expertise, and availability",
+    description: "Discover and manage our community of dedicated board members. Track expertise, skills, and availability to build a robust volunteer network ready to engage.",
   },
   {
     title: "Opportunities",
     href: "/demand",
-    description: "University events, courses, and engagement opportunities",
+    description: "Explore partnership opportunities with universities. Identify speaker slots, mentorship programs, and engagement initiatives across academic institutions.",
   },
   {
     title: "Matching",
     href: "/matching",
-    description: "AI-powered volunteer-to-opportunity matching",
+    description: "Harness AI intelligence to connect the right volunteers with the perfect opportunities. Our smart algorithm ensures meaningful partnerships that drive impact.",
   },
   {
     title: "Pipeline",
     href: "/pipeline",
-    description: "Engagement to membership conversion tracking",
+    description: "Track the complete journey from engagement to membership. Visualize conversion metrics and identify opportunities to nurture lasting relationships.",
   },
   {
     title: "Discovery",
     href: "/discovery",
-    description: "Automated university event discovery engine",
+    description: "Automatically discover new university events and engagement opportunities. Stay ahead with intelligent web scraping and real-time updates.",
   },
   {
     title: "Outreach",
     href: "/outreach",
-    description: "Email generation and follow-up tracking",
+    description: "Create personalized communication campaigns effortlessly. Generate compelling emails and track follow-ups to maximize engagement success rates.",
   },
 ];
 
 export default function Home() {
+  const [visibleCards, setVisibleCards] = useState<boolean[]>(Array(modules.length).fill(false));
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        const index = cardRefs.current.indexOf(entry.target as HTMLDivElement);
+        if (index !== -1) {
+          setVisibleCards((prev) => {
+            const newVisible = [...prev];
+            newVisible[index] = entry.isIntersecting;
+            return newVisible;
+          });
+        }
+      });
+    }, { threshold: 0.1 });
+
+    cardRefs.current.forEach((ref) => {
+      if (ref) observer.observe(ref);
+    });
+
+    return () => {
+      cardRefs.current.forEach((ref) => {
+        if (ref) observer.unobserve(ref);
+      });
+    };
+  }, []);
+
   return (
-    <div className="min-h-screen bg-white pt-28">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="relative overflow-hidden bg-[#28839f] py-24 sm:py-32">
+      <section className="relative overflow-hidden bg-[#471f8d] py-24 sm:py-32 pt-28">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <h1 className="text-4xl sm:text-6xl lg:text-7xl font-bold text-white mb-6 tracking-tight" style={{ fontFamily: "Georgia, serif" }}>
@@ -54,53 +83,42 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Modules Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16 mt-8">
-            <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
-              Explore Our Modules
-            </h2>
-            <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-              Discover powerful tools designed to streamline volunteer management and university engagement
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {modules.map((mod) => (
+      {/* Module Sections */}
+      {modules.map((mod, index) => (
+        <section
+          key={mod.href}
+          ref={(el) => {
+            cardRefs.current[index] = el || null;
+          }}
+          className={`relative min-h-screen flex items-center justify-center py-24 sm:py-32 transition-all duration-500 ${
+            visibleCards[index] ? "pop-up-3d" : "opacity-0"
+          }`}
+          style={{
+            backgroundColor: index % 2 === 0 ? "#FFFFFF" : "#dbbde5",
+            transform: visibleCards[index]
+              ? "perspective(1000px) rotateX(0deg) scale(1)"
+              : "perspective(1000px) rotateX(-10deg) scale(0.95)",
+          }}
+        >
+          <div className="max-w-7xl mx-auto px-6 w-full">
+            <div className="text-center">
+              <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 tracking-tight">
+                {mod.title}
+              </h2>
+              <p className="text-xl sm:text-2xl text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
+                {mod.description}
+              </p>
               <Link
-                key={mod.href}
                 href={mod.href}
-                className="group relative bg-white border border-gray-200 rounded-2xl p-8 hover:shadow-lg transition-all duration-300"
-                style={{
-                  borderColor: "transparent"
-                }}
-                onMouseEnter={(e) => e.currentTarget.style.borderColor = "#28839f"}
-                onMouseLeave={(e) => e.currentTarget.style.borderColor = "transparent"}
+                className="inline-block px-8 py-4 text-gray-900 rounded-lg hover:opacity-80 transition-all duration-300 font-semibold"
+                style={{ backgroundColor: "#93C5FD" }}
               >
-                <div className="mb-6">
-                  <h3 className="text-2xl font-semibold text-gray-900 mb-3 transition-colors"
-                    style={{ color: "inherit" }}
-                    onMouseEnter={(e) => e.currentTarget.style.color = "#28839f"}
-                    onMouseLeave={(e) => e.currentTarget.style.color = "#111"}
-                  >
-                    {mod.title}
-                  </h3>
-                  <p className="text-gray-600 leading-relaxed">
-                    {mod.description}
-                  </p>
-                </div>
-                <div className="flex items-center font-medium" style={{ color: "#28839f" }}>
-                  <span>Learn more</span>
-                  <svg className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </div>
+                Explore {mod.title}
               </Link>
-            ))}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+      ))}
     </div>
   );
 }
