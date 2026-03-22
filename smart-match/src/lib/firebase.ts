@@ -25,5 +25,5 @@ const firebaseConfig = {
 };
 
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-const db = admin.firestore();
+export const db = getFirestore(app);
 export const auth = getAuth(app);
