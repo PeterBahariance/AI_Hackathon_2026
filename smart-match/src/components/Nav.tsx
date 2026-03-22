@@ -35,7 +35,7 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
-          <button className="ml-4 px-4 py-2 text-gray-900 rounded transition-colors hover:opacity-90" style={{ backgroundColor: "#93C5FD", fontWeight: "600" }}>
+          <button className="ml-4 px-4 py-2 text-white rounded transition-colors hover:opacity-90" style={{ backgroundColor: "#93C5FD", fontWeight: "600" }}>
             Login
           </button>
         </div>

@@ -9,8 +9,8 @@ const months = [
 
 const MonthCalendar = ({ month, year, days }: { month: string; year: number; days: number }) => (
   <div className="bg-white rounded-xl shadow-md p-4 border border-[#dbbde5] flex-1 min-w-0">
-    <div className="text-center mb-4 py-2 rounded-lg" style={{ backgroundColor: "#471f8d" }}>
-      <h3 className="text-base font-semibold text-white">{month} {year}</h3>
+    <div className="text-center mb-4 py-2 rounded-lg" style={{ backgroundColor: "#dbbde5" }}>
+      <h3 className="text-base font-semibold text-black">{month} {year}</h3>
     </div>
 
     {/* Days of week header */}
@@ -45,8 +45,8 @@ export default function DiscoveryPage() {
       {/* Header Banner */}
       <div className="bg-[#471f8d] pt-28 pb-10 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-2">Discovery Engine</h1>
-          <p className="text-[#dbbde5] text-lg">Automated university event finder — web scraping and LLM extraction.</p>
+          <h1 className="text-4xl font-bold text-white mb-2" style={{ fontFamily: "Georgia, serif" }}>Discovery Engine</h1>
+          <p className="text-[#dbbde5] text-lg" style={{ fontFamily: "Georgia, serif" }}>Automated university event finder — web scraping and LLM extraction.</p>
         </div>
       </div>
 

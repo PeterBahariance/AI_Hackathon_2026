@@ -4,8 +4,8 @@ export default function DemandPage() {
       {/* Header Banner */}
       <div className="bg-[#471f8d] pt-28 pb-10 px-6">
         <div className="max-w-7xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-2">Opportunities (Demand Side)</h1>
-          <p className="text-[#dbbde5] text-lg">CPP events, courses, and campus engagement opportunities.</p>
+          <h1 className="text-4xl font-bold text-white mb-2" style={{ fontFamily: "Georgia, serif" }}>Opportunities (Demand Side)</h1>
+          <p className="text-[#dbbde5] text-lg" style={{ fontFamily: "Georgia, serif" }}>CPP events, courses, and campus engagement opportunities.</p>
         </div>
       </div>
 

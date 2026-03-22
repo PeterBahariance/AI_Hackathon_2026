@@ -109,7 +109,7 @@ export default function Home() {
               </p>
               <Link
                 href={mod.href}
-                className="inline-block px-8 py-4 text-gray-900 rounded-lg hover:opacity-80 transition-all duration-300 font-semibold"
+                className="inline-block px-8 py-4 text-white rounded-lg hover:opacity-80 transition-all duration-300 font-semibold"
                 style={{ backgroundColor: "#93C5FD" }}
               >
                 Explore {mod.title}
