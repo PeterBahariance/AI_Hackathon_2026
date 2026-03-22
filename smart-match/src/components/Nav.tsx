@@ -28,8 +28,8 @@ export default function Nav() {
               key={link.href}
               href={link.href}
               className={`px-3 py-1 rounded transition-all duration-200 ${pathname === link.href
-                  ? "bg-[#471f8d] text-white"
-                  : "text-gray-600 hover:bg-[#471f8d] hover:text-white"
+                ? "bg-[#471f8d] text-white"
+                : "text-gray-600 hover:bg-[#471f8d] hover:text-white"
                 }`}
             >
               {link.label}

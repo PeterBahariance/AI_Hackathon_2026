@@ -90,9 +90,8 @@ export default function Home() {
           ref={(el) => {
             cardRefs.current[index] = el || null;
           }}
-          className={`relative min-h-screen flex items-center justify-center py-24 sm:py-32 transition-all duration-500 ${
-            visibleCards[index] ? "pop-up-3d" : "opacity-0"
-          }`}
+          className={`relative min-h-screen flex items-center justify-center py-24 sm:py-32 transition-all duration-500 ${visibleCards[index] ? "pop-up-3d" : "opacity-0"
+            }`}
           style={{
             backgroundColor: index % 2 === 0 ? "#FFFFFF" : "#dbbde5",
             transform: visibleCards[index]
