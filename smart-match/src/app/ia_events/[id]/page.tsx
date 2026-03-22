@@ -6,12 +6,11 @@ import { db } from "@/lib/firebase";
 import { doc, getDoc } from "firebase/firestore";
 
 interface IAEvent {
-  Title: string;
-  Date: string;
-  Location?: string;
-  Description?: string;
-  Organization?: string;
-  Type?: string;
+  "IA Event Date": string;
+  Region: string;
+  "Nearby Universities": string;
+  "Suggested Lecture Window": string;
+  "Course Alignment": string;
 }
 
 export default function EventDetailPage() {
@@ -29,8 +28,6 @@ export default function EventDetailPage() {
 
         if (docSnap.exists()) {
           setEvent(docSnap.data() as IAEvent);
-        } else {
-          console.error("No such event found!");
         }
       } catch (error) {
         console.error("Error fetching event:", error);
@@ -47,7 +44,6 @@ export default function EventDetailPage() {
   return (
     <div className="min-h-screen bg-gray-50 pt-28 pb-12 px-6">
       <div className="max-w-3xl mx-auto">
-        {/* Navigation */}
         <button 
           onClick={() => router.back()}
           className="mb-6 text-[#471f8d] font-semibold hover:underline flex items-center gap-2"
@@ -59,42 +55,34 @@ export default function EventDetailPage() {
           {/* Header Section */}
           <div className="bg-[#471f8d] p-8 text-white">
             <div className="uppercase tracking-widest text-xs font-bold text-[#dbbde5] mb-2">
-              {event.Type || "Internal Audit Event"}
+              Region: {event.Region}
             </div>
             <h1 className="text-3xl font-bold" style={{ fontFamily: "Georgia, serif" }}>
-              {event.Title}
+              IA Event: {event["IA Event Date"]}
             </h1>
           </div>
 
           {/* Body Section */}
-          <div className="p-8 space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="p-8 space-y-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3 className="text-xs font-bold text-gray-400 uppercase">When</h3>
-                <p className="text-lg text-gray-900 font-medium">{event.Date}</p>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Nearby Universities</h3>
+                <p className="text-lg text-gray-900 font-medium">{event["Nearby Universities"]}</p>
               </div>
               <div>
-                <h3 className="text-xs font-bold text-gray-400 uppercase">Where</h3>
-                <p className="text-lg text-gray-900 font-medium">{event.Location || "TBD"}</p>
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Suggested Window</h3>
+                <p className="text-lg text-gray-900 font-medium">{event["Suggested Lecture Window"]}</p>
               </div>
             </div>
 
             <hr className="border-gray-100" />
 
-            <div>
-              <h3 className="text-xs font-bold text-gray-400 uppercase mb-2">Details</h3>
-              <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                {event.Description || "No additional description provided for this event."}
+            <div className="bg-[#f9f5ff] p-6 rounded-xl border border-[#dbbde5]">
+              <h3 className="text-xs font-bold text-[#471f8d] uppercase tracking-wider mb-2">Course Alignment</h3>
+              <p className="text-gray-700 leading-relaxed italic text-lg">
+                "{event["Course Alignment"]}"
               </p>
             </div>
-
-            {event.Organization && (
-              <div className="pt-4">
-                <span className="inline-block bg-[#f9f5ff] text-[#471f8d] px-4 py-1 rounded-full text-sm font-semibold border border-[#dbbde5]">
-                  Organized by: {event.Organization}
-                </span>
-              </div>
-            )}
           </div>
         </div>
       </div>
