@@ -45,12 +45,32 @@ export default function EventDetailPage() {
     <div className="min-h-screen bg-gray-50 pt-28 pb-12 px-6">
       <div className="max-w-3xl mx-auto">
         <button 
-          onClick={() => router.back()}
-          className="mb-6 text-[#471f8d] font-semibold hover:underline flex items-center gap-2"
+        onClick={() => router.back()}
+        className="group mb-8 flex items-center gap-3 text-[#471f8d] font-bold cursor-pointer transition-colors duration-200 hover:text-[#5a2ab1]"
         >
-          ← Back to Calendar
-        </button>
+        {/* The Animated Icon Container */}
+        <div className="flex items-center justify-center w-10 h-10 rounded-full bg-[#f9f5ff] border border-[#dbbde5] transition-all duration-300 group-hover:bg-[#471f8d] group-hover:text-white group-hover:-translate-x-3 shadow-sm cursor-pointer">
+            <svg 
+            xmlns="http://www.w3.org/2000/svg" 
+            width="20" 
+            height="20" 
+            viewBox="0 0 24 24" 
+            fill="none" 
+            stroke="currentColor" 
+            strokeWidth="3" 
+            strokeLinecap="round" 
+            strokeLinejoin="round"
+            className="transition-transform duration-300 group-hover:animate-pulse"
+            >
+            <path d="m15 18-6-6 6-6"/>
+            </svg>
+        </div>
 
+        <span className="text-lg tracking-tight cursor-pointer">
+            Back to Calendar
+        </span>
+        </button>
+        
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-[#dbbde5]">
           {/* Header Section */}
           <div className="bg-[#471f8d] p-8 text-white">
