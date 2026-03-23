@@ -6,7 +6,7 @@ AI-powered CRM that matches IA West board member volunteers to university engage
 
 ### Option 1: Without Docker (simplest)
 
-Make sure you have [Node.js 20](https://nodejs.org/) installed.
+Make sure you have [Node.js 20](https://nodejs.org/) installed (prebuilt Node.js v20.20.1).
 
 ```bash
 git clone https://github.com/PeterBahariance/AI_Hackathon_2026.git
@@ -17,7 +17,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000)
 
-
+### Option 2: Windows - Without Docker (If you have multiple Node.js installations)
+Install the stable version [nvm-windows](https://github.com/coreybutler/nvm-windows)
+Install Node.js 20 via nvm
+```bash
+nvm install 20
+nvm use 20
+cd AI_Hackathon_2026/smart-match
+npm install
+npm run dev
+```
 
 ## Project Structure
 

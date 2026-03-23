@@ -63,7 +63,7 @@ const MonthCalendar = ({ name, monthIndex, year, days, events }: any) => {
   );
 };
 
-export default function IAEventsPage() {
+export default function CalendarPage() {
   const [events, setEvents] = useState<IAEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
