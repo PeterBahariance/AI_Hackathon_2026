@@ -53,7 +53,7 @@ export default function VolunteersPage() {
               {volunteers.map((person) => (
                 <Link 
                   key={person.id} 
-                  href={`/supply/${person.id}`}
+                  href={`/volunteers/${person.id}`}
                   className="group relative bg-white rounded-2xl p-8 border border-[#dbbde5] shadow-sm 
                              cursor-pointer transition-all duration-300 ease-out
                              hover:shadow-2xl hover:-translate-y-2 hover:border-[#471f8d] 
