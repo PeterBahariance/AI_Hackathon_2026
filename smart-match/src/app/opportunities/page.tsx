@@ -26,16 +26,24 @@ export default function OpportunitiesPage() {
   const [currentCategory, setCurrentCategory] = useState<FilterCategory | "">("");
   const [tempValue, setTempValue] = useState("");
 
-  useEffect(() => {
+useEffect(() => {
     async function fetchEvents() {
       try {
         const q = query(collection(db, "event_calendar"), orderBy("IA Event Date", "asc"));
         const querySnapshot = await getDocs(q);
-        const rawData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        
+        // Cast the raw data to IAEvent immediately
+        const rawData = querySnapshot.docs.map(doc => ({ 
+          id: doc.id, 
+          ...doc.data() 
+        })) as IAEvent[];
+
+        // Use the typed rawData for de-duplication
         const uniqueData = Array.from(new Map(rawData.map(item => [
           `${item["IA Event Date"]}-${item["Nearby Universities"]}`, item
         ])).values());
-        setEvents(uniqueData as IAEvent[]);
+
+        setEvents(uniqueData);
       } catch (error) {
         console.error("Error fetching events:", error);
       } finally {
@@ -45,15 +53,17 @@ export default function OpportunitiesPage() {
     fetchEvents();
   }, []);
 
-  // Filter Logic: Applies all active filters cumulatively
+  // Filter Logic
   const filteredEvents = useMemo(() => {
     return events.filter(event => {
       return (Object.entries(activeFilters) as [FilterCategory, string][]).every(([category, value]) => {
-        return event[category].toLowerCase().includes(value.toLowerCase());
+        // Use bracket notation with the category variable
+        const eventValue = event[category]; 
+        return eventValue.toLowerCase().includes(value.toLowerCase());
       });
     });
   }, [events, activeFilters]);
-
+  
   // Unique values for dropdowns
   const getOptionsForCategory = (cat: FilterCategory) => {
     return Array.from(new Set(events.map(e => e[cat]))).sort();
@@ -80,7 +90,7 @@ export default function OpportunitiesPage() {
         <div className="mb-10 flex items-center justify-between border-b border-slate-200 pb-6">
           <div>
             <h1 className="text-4xl font-bold text-[#471f8d] mb-2" style={{ fontFamily: "Georgia, serif" }}>Opportunities</h1>
-            <p className="text-slate-600" style={{ fontFamily: "Georgia, serif" }}>University engagement discovery engine</p>
+            <p className="text-slate-600" style={{ fontFamily: "Georgia, serif" }}>University engagement discovery engine.</p>
           </div>
           <div className="text-right">
             <span className="text-5xl font-black text-[#471f8d] opacity-20 block leading-none">
