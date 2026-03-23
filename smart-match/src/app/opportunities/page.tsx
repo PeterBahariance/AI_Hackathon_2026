@@ -4,7 +4,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import Link from 'next/link';
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, orderBy } from "firebase/firestore";
-import { Calendar, ExternalLink, Loader2, BookOpen, Clock, Search, Filter, X } from 'lucide-react';
+import { Calendar, ExternalLink, Loader2, BookOpen, Clock, ListFilter, X, PlusCircle } from 'lucide-react';
 
 interface IAEvent {
   id: string;
@@ -15,25 +15,26 @@ interface IAEvent {
   "Course Alignment": string;
 }
 
+type FilterCategory = "Region" | "IA Event Date" | "Suggested Lecture Window" | "Course Alignment";
+
 export default function OpportunitiesPage() {
   const [events, setEvents] = useState<IAEvent[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Filter States
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedRegion, setSelectedRegion] = useState("");
+  // Multi-Filter State
+  const [activeFilters, setActiveFilters] = useState<Partial<Record<FilterCategory, string>>>({});
+  const [currentCategory, setCurrentCategory] = useState<FilterCategory | "">("");
+  const [tempValue, setTempValue] = useState("");
 
   useEffect(() => {
     async function fetchEvents() {
       try {
         const q = query(collection(db, "event_calendar"), orderBy("IA Event Date", "asc"));
         const querySnapshot = await getDocs(q);
-        
         const rawData = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         const uniqueData = Array.from(new Map(rawData.map(item => [
           `${item["IA Event Date"]}-${item["Nearby Universities"]}`, item
         ])).values());
-
         setEvents(uniqueData as IAEvent[]);
       } catch (error) {
         console.error("Error fetching events:", error);
@@ -44,151 +45,158 @@ export default function OpportunitiesPage() {
     fetchEvents();
   }, []);
 
-  // Filtering Logic
+  // Filter Logic: Applies all active filters cumulatively
   const filteredEvents = useMemo(() => {
-    return events.filter((event) => {
-      const matchesSearch = 
-        event["Nearby Universities"].toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event["Course Alignment"].toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event["Suggested Lecture Window"].toLowerCase().includes(searchQuery.toLowerCase()) ||
-        event["IA Event Date"].includes(searchQuery);
-      
-      const matchesRegion = selectedRegion === "" || event.Region === selectedRegion;
-
-      return matchesSearch && matchesRegion;
+    return events.filter(event => {
+      return (Object.entries(activeFilters) as [FilterCategory, string][]).every(([category, value]) => {
+        return event[category].toLowerCase().includes(value.toLowerCase());
+      });
     });
-  }, [events, searchQuery, selectedRegion]);
+  }, [events, activeFilters]);
 
-  // Unique Regions for the dropdown
-  const regions = useMemo(() => {
-    return Array.from(new Set(events.map(e => e.Region))).sort();
-  }, [events]);
+  // Unique values for dropdowns
+  const getOptionsForCategory = (cat: FilterCategory) => {
+    return Array.from(new Set(events.map(e => e[cat]))).sort();
+  };
+
+  const addFilter = (val: string) => {
+    if (!currentCategory || !val) return;
+    setActiveFilters(prev => ({ ...prev, [currentCategory]: val }));
+    setCurrentCategory("");
+    setTempValue("");
+  };
+
+  const removeFilter = (cat: FilterCategory) => {
+    const newFilters = { ...activeFilters };
+    delete newFilters[cat];
+    setActiveFilters(newFilters);
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 pt-28 pb-20">
       <div className="max-w-7xl mx-auto px-6">
         
         {/* Header Section */}
-        <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-4 mb-3">
-                <h1 className="text-4xl font-bold text-[#471f8d]" style={{ fontFamily: "Georgia, serif" }}>
-                Opportunities
-                </h1>
-                {!loading && (
-                    <span className="bg-[#471f8d]/10 text-[#471f8d] px-3 py-1 rounded-full text-sm font-bold border border-[#471f8d]/20">
-                        {filteredEvents.length} {filteredEvents.length === 1 ? 'Opportunity' : 'Opportunities'}
-                    </span>
-                )}
-            </div>
-            <p className="text-lg text-slate-600 max-w-2xl" style={{ fontFamily: "Georgia, serif" }}>
-              Campus events and course guest lectures discovered from the web.          
-            </p>
+        <div className="mb-10 flex items-center justify-between border-b border-slate-200 pb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-[#471f8d] mb-2" style={{ fontFamily: "Georgia, serif" }}>Opportunities</h1>
+            <p className="text-slate-600" style={{ fontFamily: "Georgia, serif" }}>University engagement discovery engine</p>
+          </div>
+          <div className="text-right">
+            <span className="text-5xl font-black text-[#471f8d] opacity-20 block leading-none">
+              {filteredEvents.length}
+            </span>
+            <span className="text-[10px] font-bold text-[#471f8d] uppercase tracking-widest">
+              Available Matches
+            </span>
           </div>
         </div>
 
-        {/* Filters Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm mb-8 flex flex-col md:flex-row gap-4 items-center">
-          <div className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
-            <input 
-              type="text"
-              placeholder="Filter by University, Date, Lecture Window, or Course..."
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#471f8d]/20 focus:border-[#471f8d] transition-all"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-            {searchQuery && (
-              <button 
-                onClick={() => setSearchQuery("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+        {/* Multi-Filter Builder */}
+        <div className="space-y-4 mb-12">
+          <div className="bg-white p-3 rounded-2xl border border-[#dbbde5] shadow-sm flex flex-col md:flex-row items-center gap-4">
+            <div className="flex items-center gap-2 min-w-[200px] border-r border-slate-100 pr-4">
+              <ListFilter className="w-5 h-5 text-[#471f8d]" />
+              <select 
+                value={currentCategory}
+                onChange={(e) => { setCurrentCategory(e.target.value as FilterCategory); setTempValue(""); }}
+                className="bg-transparent font-bold text-[#471f8d] focus:outline-none cursor-pointer w-full"
               >
-                <X className="w-4 h-4" />
-              </button>
+                <option value="">+ Add Filter...</option>
+                <option value="Region">Location</option>
+                <option value="IA Event Date">Date</option>
+                <option value="Suggested Lecture Window">Lecture Window</option>
+                <option value="Course Alignment">Course Alignment</option>
+              </select>
+            </div>
+
+            {currentCategory && (
+              <div className="flex-1 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-200 w-full">
+                {currentCategory === "Course Alignment" ? (
+                  <input 
+                    autoFocus
+                    type="text"
+                    placeholder="Search keywords..."
+                    className="flex-1 bg-slate-50 border-none rounded-lg px-4 py-2 focus:ring-2 focus:ring-[#471f8d]/20 outline-none"
+                    value={tempValue}
+                    onChange={(e) => setTempValue(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && addFilter(tempValue)}
+                  />
+                ) : (
+                  <select 
+                    autoFocus
+                    value={tempValue}
+                    onChange={(e) => addFilter(e.target.value)}
+                    className="flex-1 bg-slate-50 border-none rounded-lg px-4 py-2 outline-none font-medium text-slate-700"
+                  >
+                    <option value="">Select option...</option>
+                    {getOptionsForCategory(currentCategory).map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                  </select>
+                )}
+                {currentCategory === "Course Alignment" && (
+                  <button onClick={() => addFilter(tempValue)} className="text-[#471f8d] p-2 hover:bg-[#f4efff] rounded-lg">
+                    <PlusCircle size={24} />
+                  </button>
+                )}
+              </div>
             )}
           </div>
 
-          <div className="relative w-full md:w-64">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-            <select 
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-[#471f8d]/20 appearance-none text-slate-700 font-medium"
-              value={selectedRegion}
-              onChange={(e) => setSelectedRegion(e.target.value)}
-            >
-              <option value="">All Regions</option>
-              {regions.map(region => (
-                <option key={region} value={region}>{region}</option>
-              ))}
-            </select>
+          {/* Active Filter Chips */}
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(activeFilters).map(([cat, val]) => (
+              <div key={cat} className="flex items-center gap-2 bg-[#471f8d] text-white pl-3 pr-1 py-1 rounded-full text-xs font-bold shadow-md animate-in slide-in-from-top-1">
+                <span className="opacity-70 uppercase text-[9px] mr-1">{cat}:</span>
+                {val}
+                <button onClick={() => removeFilter(cat as FilterCategory)} className="p-1 hover:bg-white/20 rounded-full">
+                  <X size={14} />
+                </button>
+              </div>
+            ))}
+            {Object.keys(activeFilters).length > 0 && (
+              <button onClick={() => setActiveFilters({})} className="text-slate-400 text-xs font-bold hover:text-[#471f8d] px-2">
+                Clear All
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Content Section */}
+        {/* Grid Section */}
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-[#471f8d] mb-4" />
-            <p className="text-slate-500 font-medium">Loading opportunities...</p>
-          </div>
-        ) : filteredEvents.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl border-2 border-dashed border-slate-200">
-                <p className="text-slate-400 font-medium italic">No matches found for your current filters.</p>
-                <button 
-                    onClick={() => {setSearchQuery(""); setSelectedRegion("");}}
-                    className="mt-4 text-[#471f8d] font-bold hover:underline"
-                >
-                    Clear all filters
-                </button>
-            </div>
+          <div className="flex justify-center py-20"><Loader2 className="animate-spin text-[#471f8d]" size={40} /></div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredEvents.map((event) => (
-              <div 
-                key={event.id} 
-                className="bg-white border border-slate-200 rounded-2xl shadow-sm hover:shadow-xl hover:border-[#471f8d]/30 transition-all duration-300 flex flex-col h-full"
-              >
-                <div className="p-6 border-b border-slate-50 bg-slate-50/50 rounded-t-2xl">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="bg-[#471f8d] text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">
+              <div key={event.id} className="bg-white border border-slate-200 rounded-3xl shadow-sm hover:shadow-2xl transition-all duration-500 flex flex-col h-full overflow-hidden group border-b-4 border-b-transparent hover:border-b-[#471f8d]">
+                <div className="p-8 pb-4">
+                  <div className="flex justify-between items-start mb-4">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-[#471f8d] bg-[#f4efff] px-3 py-1 rounded-lg">
                       {event.Region}
                     </span>
                   </div>
-                  <h3 className="text-xl font-bold text-slate-900 leading-tight" style={{ fontFamily: "Georgia, serif" }}>
+                  <h3 className="text-2xl font-bold text-slate-900 leading-tight mb-2" style={{ fontFamily: "Georgia, serif" }}>
                     {event["Nearby Universities"]}
                   </h3>
                 </div>
 
-                <div className="p-6 space-y-4 flex-grow">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="w-5 h-5 text-[#471f8d] mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">Event Date</p>
-                      <p className="text-sm font-medium text-slate-700">{event["IA Event Date"]}</p>
-                    </div>
+                <div className="px-8 py-4 space-y-6 flex-grow">
+                  <div className="flex gap-4 items-center border-l-2 border-[#471f8d]/10 pl-4 group-hover:border-[#471f8d] transition-colors">
+                    <Calendar className="w-5 h-5 text-[#471f8d]" />
+                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</p><p className="text-sm font-bold text-slate-700">{event["IA Event Date"]}</p></div>
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <Clock className="w-5 h-5 text-[#471f8d] mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">Lecture Window</p>
-                      <p className="text-sm text-slate-600 italic leading-snug">{event["Suggested Lecture Window"]}</p>
-                    </div>
+                  <div className="flex gap-4 items-center border-l-2 border-[#471f8d]/10 pl-4 group-hover:border-[#471f8d] transition-colors">
+                    <Clock className="w-5 h-5 text-[#471f8d]" />
+                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Window</p><p className="text-sm text-slate-600 font-medium italic">{event["Suggested Lecture Window"]}</p></div>
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <BookOpen className="w-5 h-5 text-[#471f8d] mt-0.5" />
-                    <div>
-                      <p className="text-xs font-semibold text-slate-400 uppercase tracking-tighter">Course Alignment</p>
-                      <p className="text-sm text-slate-600 line-clamp-2">{event["Course Alignment"]}</p>
-                    </div>
+                  <div className="flex gap-4 items-center border-l-2 border-[#471f8d]/10 pl-4 group-hover:border-[#471f8d] transition-colors">
+                    <BookOpen className="w-5 h-5 text-[#471f8d]" />
+                    <div><p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Course</p><p className="text-sm text-slate-600 font-medium line-clamp-2">{event["Course Alignment"]}</p></div>
                   </div>
                 </div>
 
-                <div className="p-6 pt-0 mt-auto">
-                  <Link 
-                    href={`/ia_events/${event.id}`}
-                    className="w-full flex items-center justify-center gap-2 bg-white border-2 border-[#471f8d] text-[#471f8d] px-4 py-2.5 rounded-xl font-bold hover:bg-[#471f8d] hover:text-white transition-all duration-200 group"
-                  >
-                    Match Volunteer <ExternalLink size={16} className="group-hover:translate-x-0.5 transition-transform" />
+                <div className="p-8 pt-0 mt-auto">
+                  <Link href={`/ia_events/${event.id}`} className="w-full flex items-center justify-center gap-3 bg-[#471f8d] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#36176d] transition-all shadow-lg hover:shadow-[#471f8d]/40">
+                    Match Volunteer <ExternalLink size={16} />
                   </Link>
                 </div>
               </div>
