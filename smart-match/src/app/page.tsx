@@ -13,7 +13,7 @@ import {
 const modules = [
   {
     title: "Volunteers",
-    href: "/supply",
+    href: "/volunteers",
     icon: <Users className="w-10 h-10 mb-4" />,
     description: "Discover and manage our community of dedicated board members. Track expertise, skills, and availability to build a robust volunteer network ready to engage.",
   },
