@@ -4,17 +4,17 @@ import React, { useEffect, useState, useMemo } from "react";
 import { db } from "@/lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import Link from "next/link";
-import { 
-  Loader2, 
-  User, 
-  ListFilter, 
-  X, 
-  PlusCircle, 
-  Search, 
-  MapPin, 
+import {
+  Loader2,
+  ListFilter,
+  X,
+  MapPin,
   Briefcase,
-  CheckCircle2 // New icon for roles
+  CheckCircle2,
+  ShieldCheck,
+  FlaskConical,
 } from 'lucide-react';
+import { REAL_MEMBER_NAMES, MOCK_VOLUNTEER_PROFILES } from "@/data/pipelineData";
 
 interface Volunteer {
   id: string;
@@ -23,14 +23,15 @@ interface Volunteer {
   Company: string;
   "Metro Region": string;
   Expertise: string;
-  Roles?: string[]; // Assuming roles are stored as an array or comma-string
+  Roles?: string[];
+  isMock?: boolean;
+  [key: string]: unknown;
 }
 
-// Added "Roles" to the FilterCategory
-type FilterCategory = "Name" | "Metro Region" | "Expertise" | "Company" | "Roles";
+type FilterCategory = "Name" | "Metro Region" | "Expertise" | "Company" | "Roles" | "Type";
 
 export default function VolunteersPage() {
-  const [volunteers, setVolunteers] = useState<Volunteer[]>([]);
+  const [firestoreVolunteers, setFirestoreVolunteers] = useState<Volunteer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [activeFilters, setActiveFilters] = useState<Partial<Record<FilterCategory, string>>>({});
@@ -43,9 +44,10 @@ export default function VolunteersPage() {
         const querySnapshot = await getDocs(collection(db, "volunteers"));
         const volunteerList = querySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          isMock: false,
         })) as Volunteer[];
-        setVolunteers(volunteerList);
+        setFirestoreVolunteers(volunteerList);
       } catch (error) {
         console.error("Error fetching volunteers:", error);
       } finally {
@@ -55,24 +57,47 @@ export default function VolunteersPage() {
     fetchVolunteers();
   }, []);
 
-  // Enhanced Filter Logic
+  // Merge Firestore (real) volunteers with static mock profiles
+  const allVolunteers = useMemo<Volunteer[]>(() => {
+    const mockVolunteers: Volunteer[] = MOCK_VOLUNTEER_PROFILES.map(m => ({
+      id: m.id,
+      Name: m.Name,
+      Title: m.Title,
+      Company: m.Company,
+      "Metro Region": m["Metro Region"],
+      Expertise: m.Expertise,
+      isMock: true,
+    }));
+    // Tag each Firestore volunteer's mock status based on board membership
+    const tagged = firestoreVolunteers.map(v => ({
+      ...v,
+      isMock: !REAL_MEMBER_NAMES.has(v.Name),
+    }));
+    return [...tagged, ...mockVolunteers];
+  }, [firestoreVolunteers]);
+
   const filteredVolunteers = useMemo(() => {
-    return volunteers.filter(person => {
+    return allVolunteers.filter(person => {
       return (Object.entries(activeFilters) as [FilterCategory, string][]).every(([category, value]) => {
-        // Special handling for the "Roles" array if applicable
         if (category === "Roles") {
-           const roles = person.Roles || [];
-           return roles.some(r => r.toLowerCase().includes(value.toLowerCase()));
+          const roles = person.Roles || [];
+          return roles.some(r => r.toLowerCase().includes(value.toLowerCase()));
         }
-        const personValue = person[category] || "";
+        if (category === "Type") {
+          if (value === "Real Member") return !person.isMock;
+          if (value === "Mock Data") return person.isMock;
+          return true;
+        }
+        const personValue = (person[category] as string) || "";
         return personValue.toLowerCase().includes(value.toLowerCase());
       });
     });
-  }, [volunteers, activeFilters]);
+  }, [allVolunteers, activeFilters]);
 
   const getOptionsForCategory = (cat: FilterCategory) => {
-    if (cat === "Roles") return ["Judge", "Mentor", "Speaker", "Panelist"]; // Static options for roles
-    return Array.from(new Set(volunteers.map(v => v[cat]).filter(Boolean))).sort();
+    if (cat === "Roles") return ["Judge", "Mentor", "Speaker", "Panelist"];
+    if (cat === "Type") return ["Real Member", "Mock Data"];
+    return Array.from(new Set(allVolunteers.map(v => v[cat] as string).filter(Boolean))).sort();
   };
 
   const addFilter = (val: string) => {
@@ -88,11 +113,14 @@ export default function VolunteersPage() {
     setActiveFilters(newFilters);
   };
 
+  const realCount = allVolunteers.filter(v => !v.isMock).length;
+  const mockCount = allVolunteers.filter(v => v.isMock).length;
+
   return (
     <div className="min-h-screen bg-slate-50 pt-28 pb-20">
       <div className="max-w-7xl mx-auto px-6">
-        
-        {/* Header Section */}
+
+        {/* Header */}
         <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 pb-8">
           <div>
             <h1 className="text-5xl font-bold text-[#471f8d] mb-3" style={{ fontFamily: "Georgia, serif" }}>
@@ -101,8 +129,26 @@ export default function VolunteersPage() {
             <p className="text-lg text-slate-600 max-w-2xl font-medium" style={{ fontFamily: "Georgia, serif" }}>
               Filter by expertise, region, or engagement role to find the right match.
             </p>
+
+            {/* Legend */}
+            <div className="flex items-center gap-6 mt-4">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                  <ShieldCheck size={12} />
+                  Real Member
+                </span>
+                <span className="text-slate-500 text-sm">{realCount} verified IA West board members</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 bg-amber-50 text-amber-700 border border-amber-200 text-xs font-bold px-2.5 py-1 rounded-full">
+                  <FlaskConical size={12} />
+                  Mock Data
+                </span>
+                <span className="text-slate-500 text-sm">{mockCount} illustrative pipeline examples</span>
+              </div>
+            </div>
           </div>
-          <div className="text-right">
+          <div className="text-right mt-6 md:mt-0">
             <span className="text-6xl font-black text-[#471f8d] opacity-10 block leading-none">
               {filteredVolunteers.length}
             </span>
@@ -115,13 +161,14 @@ export default function VolunteersPage() {
           <div className="bg-white p-3 rounded-2xl border border-[#dbbde5] shadow-sm flex flex-col md:flex-row items-center gap-4">
             <div className="flex items-center gap-2 min-w-[240px] border-r border-slate-100 pr-4">
               <ListFilter className="w-5 h-5 text-[#471f8d]" />
-              <select 
+              <select
                 value={currentCategory}
                 onChange={(e) => { setCurrentCategory(e.target.value as FilterCategory); setTempValue(""); }}
                 className="bg-transparent font-bold text-[#471f8d] focus:outline-none cursor-pointer w-full text-sm"
               >
                 <option value="">+ Add Filter Parameter...</option>
                 <option value="Name">Volunteer Name</option>
+                <option value="Type">Member Type</option>
                 <option value="Roles">Engagement Role</option>
                 <option value="Expertise">Expertise Area</option>
                 <option value="Metro Region">Location</option>
@@ -132,7 +179,7 @@ export default function VolunteersPage() {
             {currentCategory && (
               <div className="flex-1 flex items-center gap-3 animate-in fade-in zoom-in-95 duration-200 w-full">
                 {currentCategory === "Name" || currentCategory === "Company" ? (
-                  <input 
+                  <input
                     autoFocus
                     type="text"
                     placeholder={`Search ${currentCategory}...`}
@@ -142,7 +189,7 @@ export default function VolunteersPage() {
                     onKeyDown={(e) => e.key === 'Enter' && addFilter(tempValue)}
                   />
                 ) : (
-                  <select 
+                  <select
                     autoFocus
                     value={tempValue}
                     onChange={(e) => addFilter(e.target.value)}
@@ -172,7 +219,7 @@ export default function VolunteersPage() {
           </div>
         </div>
 
-        {/* Grid Section */}
+        {/* Grid */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32">
             <Loader2 className="h-10 w-10 animate-spin text-[#471f8d]" />
@@ -180,13 +227,28 @@ export default function VolunteersPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredVolunteers.map((person) => (
-              <Link 
-                key={person.id} 
+              <Link
+                key={person.id}
                 href={`/volunteers/${person.id}`}
-                className="group bg-white rounded-3xl p-8 border border-[#dbbde5] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500"
+                className="group bg-white rounded-3xl p-8 border border-[#dbbde5] shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 relative overflow-hidden"
               >
-                <div className="flex items-center gap-5 mb-8">
-                  <div className="w-16 h-16 rounded-2xl bg-[#471f8d] text-white flex items-center justify-center font-bold text-2xl group-hover:rotate-3 transition-transform">
+                {/* Mock / Real badge */}
+                <div className="absolute top-4 right-4">
+                  {person.isMock ? (
+                    <span className="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide">
+                      <FlaskConical size={10} />
+                      Mock Data
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-[10px] font-black px-2.5 py-1 rounded-full uppercase tracking-wide">
+                      <ShieldCheck size={10} />
+                      Real Member
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-5 mb-8 pr-24">
+                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl group-hover:rotate-3 transition-transform shrink-0 ${person.isMock ? 'bg-amber-400 text-white' : 'bg-[#471f8d] text-white'}`}>
                     {person.Name.charAt(0)}
                   </div>
                   <div>
@@ -210,16 +272,14 @@ export default function VolunteersPage() {
                   </div>
                 </div>
 
-                {/* Engagement Roles Section - Parallel to "Events" styling */}
                 <div className="pt-6 border-t border-slate-100 flex flex-wrap gap-2">
-                   {person.Expertise && (
-                     <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest">
-                       {person.Expertise}
-                     </span>
-                   )}
-                   {/* Visual indicator for "Available Roles" */}
-                   <div className="flex-1" />
-                   <CheckCircle2 size={18} className="text-[#dbbde5] group-hover:text-[#471f8d] transition-colors" />
+                  {person.Expertise && (
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-black px-3 py-1.5 rounded-lg uppercase tracking-widest">
+                      {person.Expertise.split(',')[0].trim()}
+                    </span>
+                  )}
+                  <div className="flex-1" />
+                  <CheckCircle2 size={18} className="text-[#dbbde5] group-hover:text-[#471f8d] transition-colors" />
                 </div>
               </Link>
             ))}
