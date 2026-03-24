@@ -18,7 +18,7 @@ npm run dev
 Open [http://localhost:3000](http://localhost:3000)
 
 ### Option 2: Windows - Without Docker (If you have multiple Node.js installations)
-Install the stable version [nvm-windows](https://github.com/coreybutler/nvm-windows)
+Install the stable version (nvm-setup.exe) from [nvm-windows](https://github.com/coreybutler/nvm-windows)
 Install Node.js 20 via nvm
 ```bash
 nvm install 20
