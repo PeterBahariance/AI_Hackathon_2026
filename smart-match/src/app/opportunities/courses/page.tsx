@@ -224,7 +224,7 @@ export default function CoursesPage() {
                 </div>
 
                 <div className="p-8 pt-0 mt-auto">
-                  <Link href={`/ia_events/${course.id}?type=course`} className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-600/40">
+                  <Link href={`/opportunities/courses/${course.id}`} className="w-full flex items-center justify-center gap-3 bg-blue-600 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-600/40">
                     Course Details <ArrowRight size={16} />
                   </Link>
                 </div>

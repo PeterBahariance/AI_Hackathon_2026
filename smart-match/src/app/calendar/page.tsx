@@ -41,7 +41,7 @@ const MonthCalendar = ({ name, monthIndex, year, days, events }: any) => {
             <div key={i} className="relative aspect-square">
               {isValidDay ? (
               <Link 
-                href={dayEvent ? `/opportunities/events/${dayEvent.id}` : "#"}
+                href={dayEvent ? `/opportunities/events/${encodeURIComponent(dayEvent.id)}` : "#"}
                 className={`w-full h-full border border-[#dbbde5] rounded flex flex-col items-center justify-center text-xs transition-all duration-200 ease-out
                   ${dayEvent 
                     ? "bg-[#471f8d] text-white font-bold shadow-sm hover:bg-[#5a2ab1] hover:shadow-lg hover:-translate-y-1 hover:scale-110 z-10" 

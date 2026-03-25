@@ -13,9 +13,9 @@ const links = [
   { href: "/opportunities", label: "Opportunities" },
   { href: "/calendar", label: "Calendar" },
   { href: "/matching", label: "Matching" },
+  { href: "/pipeline", label: "Pipeline" },
+  { href: "/outreach", label: "Outreach" },
   { href: "/responsible-ai", label: "Use of AI" },
-  // { href: "/pipeline", label: "Pipeline" },
-  // { href: "/outreach", label: "Outreach" },
 ];
 
 export default function Nav() {

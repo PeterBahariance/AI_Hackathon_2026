@@ -36,6 +36,12 @@ const modules = [
     description: "Harness AI intelligence to connect the right volunteers with the perfect opportunities. Our smart algorithm ensures meaningful partnerships that drive impact.",
   },
   {
+    title: "Pipeline",
+    href: "/pipeline",
+    icon: <Zap className="w-10 h-10 mb-4" />,
+    description: "Track the full member journey from campus engagement to corporate membership. Visualize conversion rates and identify where the pipeline needs attention.",
+  },
+  {
     title: "Outreach",
     href: "/outreach",
     icon: <Send className="w-10 h-10 mb-4" />,
