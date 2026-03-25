@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db } from "@/lib/firebase";
@@ -13,9 +13,12 @@ const links = [
   { href: "/opportunities", label: "Opportunities" },
   { href: "/calendar", label: "Calendar" },
   { href: "/matching", label: "Matching" },
-  { href: "/pipeline", label: "Pipeline" },
-  { href: "/outreach", label: "Outreach" },
+];
+
+const outreachLinks = [
+  { href: "/outreach", label: "Communication / Outreach" },
   { href: "/responsible-ai", label: "Use of AI" },
+  { href: "/growth-strategy", label: "Growth Strategy Plan" },
 ];
 
 export default function Nav() {
@@ -23,6 +26,18 @@ export default function Nav() {
   const router = useRouter();
   const [user, setUser] = useState<{ uid: string; username: string } | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [outreachOpen, setOutreachOpen] = useState(false);
+  const outreachRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (outreachRef.current && !outreachRef.current.contains(e.target as Node)) {
+        setOutreachOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     let unsubDoc: (() => void) | null = null;
@@ -74,6 +89,45 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+
+          {/* Outreach / Comms dropdown */}
+          <div className="relative" ref={outreachRef}>
+            <button
+              onClick={() => setOutreachOpen(!outreachOpen)}
+              className={`flex items-center gap-1 px-3 py-1 rounded transition-all duration-200 ${outreachLinks.some((l) => pathname === l.href)
+                ? "bg-[#471f8d] text-white"
+                : "text-gray-600 hover:bg-[#471f8d] hover:text-white"
+                }`}
+            >
+              Outreach / Comms
+              <svg
+                className={`w-3 h-3 transition-transform duration-200 ${outreachOpen ? "rotate-180" : ""}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {outreachOpen && (
+              <div className="absolute left-0 mt-1 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                {outreachLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setOutreachOpen(false)}
+                    className={`block px-4 py-2 text-sm transition-colors ${pathname === link.href
+                      ? "bg-[#471f8d]/10 text-[#471f8d] font-medium"
+                      : "text-gray-700 hover:bg-[#471f8d]/5 hover:text-[#471f8d]"
+                      }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
 
           {user ? (
             <div className="relative ml-4">
