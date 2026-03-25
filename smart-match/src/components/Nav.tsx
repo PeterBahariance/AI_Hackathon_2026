@@ -13,6 +13,7 @@ const links = [
   { href: "/opportunities", label: "Opportunities" },
   { href: "/calendar", label: "Calendar" },
   { href: "/matching", label: "Matching" },
+  { href: "/responsible-ai", label: "Use of AI" },
   // { href: "/pipeline", label: "Pipeline" },
   // { href: "/outreach", label: "Outreach" },
 ];
