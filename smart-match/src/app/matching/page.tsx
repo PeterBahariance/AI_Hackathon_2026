@@ -1,19 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, query, orderBy, doc, getDoc } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import {
-  Loader2, Target, MapPin, Calendar, BookOpen, Users,
-  ChevronRight, Zap, ShieldCheck, FlaskConical, SlidersHorizontal, Sparkles, User,
+  Loader2, Target, MapPin, BookOpen, Users,
+  ChevronRight, Zap, ShieldCheck, FlaskConical, SlidersHorizontal, Sparkles,
 } from 'lucide-react';
 import { MOCK_VOLUNTEER_PROFILES, REAL_MEMBER_NAMES } from '@/data/pipelineData';
 import {
   rankVolunteersForOpportunity,
   rankOpportunitiesForVolunteer,
-  computeMatchScore,
   type MatchVolunteer,
   type MatchOpportunity,
   type MatchOpportunityEvent,
@@ -38,15 +38,17 @@ const CAMPUS_EVENTS: MatchOpportunityEvent[] = [
   { type: 'event', id: 'cpp-sci-symposium', name: 'College of Science Research Symposium', category: 'Research symposium', region: 'Los Angeles', date: '2026-05-20', volunteerRoles: 'Judge; Reviewer; Guest speaker', courseAlignment: 'data science, research', nearbyUniversities: 'Cal Poly Pomona', suggestedLectureWindow: '' },
 ];
 
-export default function MatchingPage() {
+function MatchingPageContent() {
+  const searchParams = useSearchParams();
+
   // ── State ───────────────────────────────────────────────────────────────
   const [volunteers, setVolunteers] = useState<MatchVolunteer[]>([]);
   const [iaEvents, setIaEvents] = useState<MatchOpportunityEvent[]>([]);
   const [courses, setCourses] = useState<MatchOpportunityCourse[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [activeTab, setActiveTab] = useState<OpportunityTab>('ia-events');
-  const [selectedOppId, setSelectedOppId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<OpportunityTab>((searchParams.get('tab') as OpportunityTab) || 'ia-events');
+  const [selectedOppId, setSelectedOppId] = useState<string | null>(searchParams.get('opp'));
   const [minScore, setMinScore] = useState(0);
 
   // ── Auth / Personalization ──────────────────────────────────────────
@@ -509,5 +511,13 @@ export default function MatchingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MatchingPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 pt-28 pb-20 flex items-center justify-center"><Loader2 className="h-10 w-10 animate-spin text-[#471f8d]" /></div>}>
+      <MatchingPageContent />
+    </Suspense>
   );
 }

@@ -211,7 +211,7 @@ useEffect(() => {
                 </div>
 
                 <div className="p-8 pt-0 mt-auto">
-                  <Link href={`/volunteers/${event.id}`} className="w-full flex items-center justify-center gap-3 bg-[#471f8d] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#36176d] transition-all shadow-lg hover:shadow-[#471f8d]/40">
+                  <Link href={`/matching?tab=ia-events&opp=${event.id}`} className="w-full flex items-center justify-center gap-3 bg-[#471f8d] text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-[#36176d] transition-all shadow-lg hover:shadow-[#471f8d]/40">
                     Match Volunteer <ExternalLink size={16} />
                   </Link>
                 </div>
