@@ -15,6 +15,7 @@ const links = [
   { href: "/matching", label: "Matching" },
   { href: "/pipeline", label: "Pipeline" },
   { href: "/outreach", label: "Outreach" },
+  { href: "/responsible-ai", label: "Use of AI" },
 ];
 
 export default function Nav() {
