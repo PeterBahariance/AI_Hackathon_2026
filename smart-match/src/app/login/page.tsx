@@ -42,6 +42,7 @@ function AuthForm() {
     const [password, setPassword] = useState("");
     const [role, setRole] = useState("");
     const [region, setRegion] = useState("");
+    const [expertise, setExpertise] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
 
@@ -75,6 +76,7 @@ function AuthForm() {
                     email,
                     role,
                     metroRegion: region,
+                    expertise: expertise || '',
                     createdAt: serverTimestamp(),
                     lastLoginAt: serverTimestamp(),
                 });
@@ -132,6 +134,10 @@ function AuthForm() {
                                         {METRO_REGIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                                     </select>
                                 </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Expertise <span className="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="text" className={inputClass} placeholder="e.g., data analytics, brand strategy, AI" value={expertise} onChange={(e) => setExpertise(e.target.value)} />
                             </div>
                             <hr className="border-gray-100" />
                         </div>
