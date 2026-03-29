@@ -191,7 +191,26 @@ useEffect(() => {
                     </span>
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 leading-tight mb-2" style={{ fontFamily: "Georgia, serif" }}>
-                    {event["Nearby Universities"]}
+                    {event["Nearby Universities"].split(",").map((uni, i, arr) => {
+                      const trimmed = uni.trim();
+                      const isCPP = trimmed === "Cal Poly Pomona" || trimmed === "CPP";
+                      return (
+                        <span key={trimmed}>
+                          {isCPP ? (
+                            <Link
+                              href="/outreach?university=cal-poly-pomona"
+                              className="text-[#471f8d] hover:underline decoration-2 underline-offset-2"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              {trimmed}
+                            </Link>
+                          ) : (
+                            trimmed
+                          )}
+                          {i < arr.length - 1 && ", "}
+                        </span>
+                      );
+                    })}
                   </h3>
                 </div>
 

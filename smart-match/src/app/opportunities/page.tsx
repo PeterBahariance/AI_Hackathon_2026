@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { BookOpen, Calendar, ArrowRight } from 'lucide-react';
+import { BookOpen, Calendar, ArrowRight, Building2 } from 'lucide-react';
 import Link from 'next/link';
 
 export default function OpportunitiesPage() {
@@ -15,7 +15,7 @@ export default function OpportunitiesPage() {
           <p className="text-slate-600 text-lg">Select your preferred view to start matching volunteers.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Events View Card */}
           <Link 
             href="/opportunities/events" 
@@ -43,6 +43,21 @@ export default function OpportunitiesPage() {
             <p className="text-slate-500 mb-8">Browse opportunities by academic alignment, course titles, and guest lecture topics.</p>
             <span className="mt-auto flex items-center gap-2 font-bold text-blue-600">
               View Courses <ArrowRight size={18} />
+            </span>
+          </Link>
+
+          {/* University Outreach Card */}
+          <Link
+            href="/opportunities/universities"
+            className="group bg-white p-10 rounded-3xl shadow-sm hover:shadow-2xl transition-all border-b-4 border-transparent hover:border-emerald-600 flex flex-col items-center text-center"
+          >
+            <div className="p-4 bg-emerald-100 text-emerald-600 rounded-2xl mb-6 group-hover:scale-110 transition-transform">
+              <Building2 size={48} />
+            </div>
+            <h2 className="text-2xl font-bold mb-3">University Outreach</h2>
+            <p className="text-slate-500 mb-8">Discover new university opportunities with AI, browse contacts, and draft outreach emails.</p>
+            <span className="mt-auto flex items-center gap-2 font-bold text-emerald-600">
+              View Contacts <ArrowRight size={18} />
             </span>
           </Link>
         </div>

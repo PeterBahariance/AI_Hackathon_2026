@@ -51,6 +51,19 @@ function MatchingPageContent() {
   const [selectedOppId, setSelectedOppId] = useState<string | null>(searchParams.get('opp'));
   const [minScore, setMinScore] = useState(0);
 
+  // ── Discovered opportunities from University Discovery ──────────────
+  const [discoveredEvents, setDiscoveredEvents] = useState<MatchOpportunityEvent[]>([]);
+
+  useEffect(() => {
+    try {
+      const stored = sessionStorage.getItem('discoveredOpportunities');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) setDiscoveredEvents(parsed);
+      }
+    } catch { /* ignore parse errors */ }
+  }, []);
+
   // ── Auth / Personalization ──────────────────────────────────────────
   const [userProfile, setUserProfile] = useState<{ username: string; role: string; metroRegion: string; expertise: string } | null>(null);
 
@@ -158,11 +171,13 @@ function MatchingPageContent() {
   }, []);
 
   // ── Current opportunities for selected tab ────────────────────────────
+  const campusEvents = useMemo(() => [...CAMPUS_EVENTS, ...discoveredEvents], [discoveredEvents]);
+
   const currentOpportunities: MatchOpportunity[] = useMemo(() => {
     if (activeTab === 'ia-events') return iaEvents;
-    if (activeTab === 'campus-events') return CAMPUS_EVENTS;
+    if (activeTab === 'campus-events') return campusEvents;
     return courses;
-  }, [activeTab, iaEvents, courses]);
+  }, [activeTab, iaEvents, campusEvents, courses]);
 
   const selectedOpportunity = useMemo(
     () => currentOpportunities.find(o => o.id === selectedOppId) || null,
@@ -192,16 +207,24 @@ function MatchingPageContent() {
     };
 
     // Score all opportunities for this user
-    const allOpps: MatchOpportunity[] = [...iaEvents, ...CAMPUS_EVENTS, ...courses];
+    const allOpps: MatchOpportunity[] = [...iaEvents, ...campusEvents, ...courses];
     return rankOpportunitiesForVolunteer(userAsVolunteer, allOpps).slice(0, 3);
   }, [userProfile, volunteers, iaEvents, courses]);
 
-  // ── Auto-select first opportunity ─────────────────────────────────────
+  // ── Auto-select opportunity ────────────────────────────────────────────
+  // Only auto-select the first item if the URL doesn't specify one, or if
+  // the specified one isn't found in the current list.
+  const [hasAutoSelected, setHasAutoSelected] = useState(false);
   useEffect(() => {
-    if (currentOpportunities.length > 0 && !currentOpportunities.find(o => o.id === selectedOppId)) {
-      setSelectedOppId(currentOpportunities[0].id);
-    }
-  }, [currentOpportunities, selectedOppId]);
+    if (currentOpportunities.length === 0) return;
+    // If the URL-specified opp exists in the current list, keep it
+    if (selectedOppId && currentOpportunities.find(o => o.id === selectedOppId)) return;
+    // If we haven't auto-selected yet and there are discovered events still loading, wait
+    if (!hasAutoSelected && searchParams.get('opp') && discoveredEvents.length === 0) return;
+    // Otherwise default to first
+    setSelectedOppId(currentOpportunities[0].id);
+    setHasAutoSelected(true);
+  }, [currentOpportunities, selectedOppId, hasAutoSelected, discoveredEvents, searchParams]);
 
   // ── Helpers ───────────────────────────────────────────────────────────
   const getOppLabel = (opp: MatchOpportunity) => {
@@ -216,7 +239,7 @@ function MatchingPageContent() {
 
   const tabs: { key: OpportunityTab; label: string; count: number }[] = [
     { key: 'ia-events', label: 'IA Events', count: iaEvents.length },
-    { key: 'campus-events', label: 'Campus Events', count: CAMPUS_EVENTS.length },
+    { key: 'campus-events', label: 'Campus Events', count: campusEvents.length },
     { key: 'courses', label: 'Courses', count: courses.length },
   ];
 

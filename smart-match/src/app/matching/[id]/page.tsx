@@ -4,10 +4,10 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs } from 'firebase/firestore';
 import {
   ArrowLeft, Loader2, MapPin, Briefcase, BookOpen,
-  Calendar, Sparkles, ShieldCheck, FlaskConical, Target,
+  Calendar, Sparkles, ShieldCheck, FlaskConical, Target, Mail, ExternalLink,
 } from 'lucide-react';
 import { MOCK_VOLUNTEER_PROFILES, REAL_MEMBER_NAMES, MEMBER_PIPELINES, PIPELINE_STAGE_LABELS } from '@/data/pipelineData';
 import {
@@ -44,6 +44,19 @@ export default function MatchDetailPage() {
   const [loading, setLoading] = useState(true);
   const [rationale, setRationale] = useState<string | null>(null);
   const [rationaleLoading, setRationaleLoading] = useState(false);
+
+  // Contact info from events_contacts for campus events
+  interface EventContact {
+    id: string;
+    eventName: string;
+    contact: string;
+    email: string;
+    category: string;
+    url: string;
+    host: string;
+    roles: string;
+  }
+  const [contacts, setContacts] = useState<EventContact[]>([]);
 
   useEffect(() => {
     async function loadMatchData() {
@@ -114,22 +127,36 @@ export default function MatchDetailPage() {
           if (campusEvent) {
             opportunity = campusEvent;
           } else {
-            // Try Firestore (IA events)
-            const eventDoc = await getDoc(doc(db, 'event_calendar', opportunityId));
-            if (eventDoc.exists()) {
-              const d = eventDoc.data();
-              opportunity = {
-                type: 'event',
-                id: eventDoc.id,
-                name: d['Nearby Universities'] || d['Region'] || 'IA Event',
-                category: d['Course Alignment'] || '',
-                region: d['Region'] || '',
-                date: d['IA Event Date'] || '',
-                volunteerRoles: 'Guest speaker; Panelist; Mentor',
-                courseAlignment: d['Course Alignment'] || '',
-                nearbyUniversities: d['Nearby Universities'] || '',
-                suggestedLectureWindow: d['Suggested Lecture Window'] || '',
-              };
+            // Check discovered events from sessionStorage
+            try {
+              const stored = sessionStorage.getItem('discoveredOpportunities');
+              if (stored) {
+                const discovered: MatchOpportunityEvent[] = JSON.parse(stored);
+                const discoveredEvent = discovered.find(e => e.id === opportunityId);
+                if (discoveredEvent) {
+                  opportunity = discoveredEvent;
+                }
+              }
+            } catch { /* ignore */ }
+
+            if (!opportunity) {
+              // Try Firestore (IA events)
+              const eventDoc = await getDoc(doc(db, 'event_calendar', opportunityId));
+              if (eventDoc.exists()) {
+                const d = eventDoc.data();
+                opportunity = {
+                  type: 'event',
+                  id: eventDoc.id,
+                  name: d['Nearby Universities'] || d['Region'] || 'IA Event',
+                  category: d['Course Alignment'] || '',
+                  region: d['Region'] || '',
+                  date: d['IA Event Date'] || '',
+                  volunteerRoles: 'Guest speaker; Panelist; Mentor',
+                  courseAlignment: d['Course Alignment'] || '',
+                  nearbyUniversities: d['Nearby Universities'] || '',
+                  suggestedLectureWindow: d['Suggested Lecture Window'] || '',
+                };
+              }
             }
           }
         }
@@ -148,6 +175,93 @@ export default function MatchDetailPage() {
     }
     loadMatchData();
   }, [volunteerId, opportunityId, oppType]);
+
+  // Fetch contacts — from Firestore for CPP events, from sessionStorage for discovered events
+  useEffect(() => {
+    if (!result) return;
+    const opp = result.opportunity;
+    if (opp.type !== 'event') return;
+
+    const isCampus = CAMPUS_EVENTS.some(e => e.id === opp.id);
+    const isDiscovered = opp.id.startsWith('discovered-');
+
+    // For discovered events, pull contact info from sessionStorage
+    if (isDiscovered) {
+      try {
+        const stored = sessionStorage.getItem('discoveredOpportunities');
+        if (stored) {
+          const allDiscovered = JSON.parse(stored);
+          // We also stored the full contact data alongside the event
+          const discoveredContacts = sessionStorage.getItem('discoveredContacts');
+          if (discoveredContacts) {
+            const contacts = JSON.parse(discoveredContacts);
+            const match = contacts.find((c: { id: string }) => c.id === opp.id);
+            if (match) {
+              setContacts([{
+                id: match.id,
+                eventName: match.eventName || opp.name,
+                contact: match.contact || '',
+                email: match.email || '',
+                category: match.category || opp.category,
+                url: match.url || '',
+                host: match.host || '',
+                roles: match.roles || opp.volunteerRoles,
+              }]);
+              return;
+            }
+          }
+          // Fallback: reconstruct contact from the event data stored in discoveredOpportunities
+          const event = allDiscovered.find((e: { id: string }) => e.id === opp.id);
+          if (event && event.contactEmail) {
+            setContacts([{
+              id: opp.id,
+              eventName: opp.name,
+              contact: event.contactName || 'Event Contact',
+              email: event.contactEmail,
+              category: opp.category,
+              url: event.url || '',
+              host: event.host || '',
+              roles: opp.volunteerRoles,
+            }]);
+            return;
+          }
+        }
+      } catch { /* ignore */ }
+      return;
+    }
+
+    if (!isCampus) return;
+
+    async function fetchContacts() {
+      const snap = await getDocs(collection(db, 'events_contacts'));
+      const oppName = opp.type === 'event' ? opp.name : '';
+      const matched: EventContact[] = [];
+      snap.docs.forEach(d => {
+        const data = d.data();
+        const eventName = data['Event / Program'] || '';
+        // Match by checking if the event name is related to the opportunity name
+        if (eventName.toLowerCase().includes(oppName.toLowerCase().split('(')[0].trim().substring(0, 15)) ||
+            oppName.toLowerCase().includes(eventName.toLowerCase().split('(')[0].trim().substring(0, 15))) {
+          const email = data['Contact Email / Phone (published)'] || '';
+          // Skip entries without real emails
+          if (email && !email.startsWith('See') && !email.startsWith('Use')) {
+            matched.push({
+              id: d.id,
+              eventName,
+              contact: data['Point(s) of Contact (published)'] || '',
+              email,
+              category: data['Category'] || '',
+              url: data['Public URL'] || '',
+              host: data['Host / Unit'] || '',
+              roles: data['Volunteer Roles (fit)'] || '',
+            });
+          }
+        }
+      });
+      setContacts(matched);
+    }
+    fetchContacts();
+  }, [result]);
 
   const handleGenerateRationale = async () => {
     if (!result) return;
@@ -362,6 +476,56 @@ export default function MatchDetailPage() {
             </button>
           )}
         </div>
+
+        {/* ── Reach Out ─────────────────────────────────────────── */}
+        {contacts.length > 0 && (
+          <div className="bg-white rounded-3xl border border-emerald-200 shadow-sm p-8 mt-8">
+            <h3 className="text-xs font-black text-emerald-700 uppercase tracking-widest mb-4 flex items-center gap-2">
+              <Mail size={14} />
+              Next Step: Reach Out
+            </h3>
+            <p className="text-sm text-slate-500 mb-6">
+              This event has contact information available. Draft an outreach email to connect <strong>{volunteer.Name}</strong> with the event organizer.
+            </p>
+            <div className="space-y-4">
+              {contacts.map(c => (
+                <div key={c.id} className="flex items-center justify-between bg-emerald-50 border border-emerald-100 rounded-2xl p-5">
+                  <div>
+                    <p className="font-bold text-slate-900 text-sm">{c.contact}</p>
+                    <p className="text-xs text-slate-500 mt-0.5">{c.host} &middot; {c.category}</p>
+                    <a href={`mailto:${c.email}`} className="text-sm font-bold text-emerald-700 hover:underline mt-1 inline-block">
+                      {c.email}
+                    </a>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {c.url && (
+                      <a href={c.url} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-slate-600 transition-colors">
+                        <ExternalLink size={16} />
+                      </a>
+                    )}
+                    <Link
+                      href={`/outreach?contact=${encodeURIComponent(c.id)}&event=${encodeURIComponent(c.eventName)}&volunteer=${encodeURIComponent(volunteer.Name)}`}
+                      className="flex items-center gap-2 bg-emerald-600 text-white px-5 py-2.5 rounded-xl font-bold text-xs hover:bg-emerald-700 transition-all shadow-md hover:shadow-emerald-600/30"
+                    >
+                      <Mail size={14} />
+                      Draft Email
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {opportunity.type === 'event' && (CAMPUS_EVENTS.some(e => e.id === opportunity.id) || opportunity.id.startsWith('discovered-')) && contacts.length === 0 && !loading && (
+          <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mt-8">
+            <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+              <Mail size={14} />
+              Outreach
+            </h3>
+            <p className="text-sm text-slate-400">No direct contact info available for this event yet.</p>
+          </div>
+        )}
 
       </div>
     </div>
