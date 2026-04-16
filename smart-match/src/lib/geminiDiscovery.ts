@@ -34,7 +34,7 @@ Return a JSON array where each object has these exact fields:
 - "Host / Unit": string (hosting department or college)
 - "Volunteer Roles (fit)": string (semicolon-separated, from: Judge; Mentor; Guest speaker; Workshop lead; Panelist; Reviewer; Industry panelist)
 - "Primary Audience": string (e.g. "Undergraduate business students", "Graduate analytics students")
-- "Public URL": string (ONLY use a URL you are confident is real and active — otherwise use an empty string "")
+- "Public URL": string (only provide a URL if you are highly confident it is a real, currently active page on the university's official website — if unsure, use an empty string "" instead of guessing)
 - "Recurrence (typical)": string (e.g. "Annual", "Semesterly", "Quarterly")
 
 University: ${universityName}

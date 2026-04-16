@@ -176,13 +176,10 @@ export default function MatchDetailPage() {
     loadMatchData();
   }, [volunteerId, opportunityId, oppType]);
 
-  // Fetch contacts — from Firestore for CPP events, from sessionStorage for discovered events
+  // Fetch contacts — from sessionStorage for discovered events, Firestore for everything else
   useEffect(() => {
     if (!result) return;
     const opp = result.opportunity;
-    if (opp.type !== 'event') return;
-
-    const isCampus = CAMPUS_EVENTS.some(e => e.id === opp.id);
     const isDiscovered = opp.id.startsWith('discovered-');
 
     // For discovered events, pull contact info from sessionStorage
@@ -191,7 +188,6 @@ export default function MatchDetailPage() {
         const stored = sessionStorage.getItem('discoveredOpportunities');
         if (stored) {
           const allDiscovered = JSON.parse(stored);
-          // We also stored the full contact data alongside the event
           const discoveredContacts = sessionStorage.getItem('discoveredContacts');
           if (discoveredContacts) {
             const contacts = JSON.parse(discoveredContacts);
@@ -205,12 +201,11 @@ export default function MatchDetailPage() {
                 category: match.category || opp.category,
                 url: match.url || '',
                 host: match.host || '',
-                roles: match.roles || opp.volunteerRoles,
+                roles: match.roles || (opp.type === 'event' ? opp.volunteerRoles : ''),
               }]);
               return;
             }
           }
-          // Fallback: reconstruct contact from the event data stored in discoveredOpportunities
           const event = allDiscovered.find((e: { id: string }) => e.id === opp.id);
           if (event && event.contactEmail) {
             setContacts([{
@@ -221,7 +216,7 @@ export default function MatchDetailPage() {
               category: opp.category,
               url: event.url || '',
               host: event.host || '',
-              roles: opp.volunteerRoles,
+              roles: opp.type === 'event' ? opp.volunteerRoles : '',
             }]);
             return;
           }
@@ -230,18 +225,22 @@ export default function MatchDetailPage() {
       return;
     }
 
-    if (!isCampus) return;
-
     async function fetchContacts() {
       const snap = await getDocs(collection(db, 'events_contacts'));
-      const oppName = opp.type === 'event' ? opp.name : '';
+      const oppName = opp.type === 'event' ? opp.name : (opp.type === 'course' ? opp.name : '');
+      const oppCategory = opp.category || '';
       const matched: EventContact[] = [];
       snap.docs.forEach(d => {
         const data = d.data();
         const eventName = data['Event / Program'] || '';
-        // Match by checking if the event name is related to the opportunity name
-        if (eventName.toLowerCase().includes(oppName.toLowerCase().split('(')[0].trim().substring(0, 15)) ||
-            oppName.toLowerCase().includes(eventName.toLowerCase().split('(')[0].trim().substring(0, 15))) {
+        const category = data['Category'] || '';
+        // Match by name similarity or category overlap
+        const nameMatch = oppName && (
+          eventName.toLowerCase().includes(oppName.toLowerCase().split('(')[0].trim().substring(0, 15)) ||
+          oppName.toLowerCase().includes(eventName.toLowerCase().split('(')[0].trim().substring(0, 15))
+        );
+        const categoryMatch = oppCategory && category.toLowerCase().includes(oppCategory.toLowerCase().substring(0, 10));
+        if (nameMatch || categoryMatch) {
           const email = data['Contact Email / Phone (published)'] || '';
           // Skip entries without real emails
           if (email && !email.startsWith('See') && !email.startsWith('Use')) {
@@ -517,13 +516,13 @@ export default function MatchDetailPage() {
           </div>
         )}
 
-        {opportunity.type === 'event' && (CAMPUS_EVENTS.some(e => e.id === opportunity.id) || opportunity.id.startsWith('discovered-')) && contacts.length === 0 && !loading && (
+        {contacts.length === 0 && !loading && (
           <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-8 mt-8">
             <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
               <Mail size={14} />
               Outreach
             </h3>
-            <p className="text-sm text-slate-400">No direct contact info available for this event yet.</p>
+            <p className="text-sm text-slate-400">No contact information available at this moment.</p>
           </div>
         )}
 

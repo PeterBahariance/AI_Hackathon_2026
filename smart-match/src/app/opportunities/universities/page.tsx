@@ -291,16 +291,15 @@ export default function UniversitiesPage() {
                       >
                         Send to Matching <ArrowRight size={16} />
                       </button>
-                      {c.url && (
-                        <a
-                          href={c.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center justify-center w-14 bg-slate-100 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 py-4 rounded-2xl transition-colors"
-                        >
-                          <ExternalLink size={16} />
-                        </a>
-                      )}
+                      <a
+                        href={c.url || `https://www.google.com/search?q=${encodeURIComponent(c.eventName + ' ' + discoveredUniversity)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center w-14 bg-slate-100 text-slate-500 hover:text-emerald-700 hover:bg-emerald-50 py-4 rounded-2xl transition-colors"
+                        title={c.url ? "Visit event page" : "Search for this event"}
+                      >
+                        {c.url ? <ExternalLink size={16} /> : <Search size={16} />}
+                      </a>
                     </div>
                   </div>
                 );

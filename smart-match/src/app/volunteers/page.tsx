@@ -15,6 +15,7 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { REAL_MEMBER_NAMES, MOCK_VOLUNTEER_PROFILES } from "@/data/pipelineData";
+import { ROLE_INFERENCE } from "@/lib/matchingConstants";
 
 interface Volunteer {
   id: string;
@@ -80,8 +81,18 @@ export default function VolunteersPage() {
     return allVolunteers.filter(person => {
       return (Object.entries(activeFilters) as [FilterCategory, string][]).every(([category, value]) => {
         if (category === "Roles") {
-          const roles = person.Roles || [];
-          return roles.some(r => r.toLowerCase().includes(value.toLowerCase()));
+          // Infer roles from title and board role using the matching engine's role inference
+          const searchText = `${person.Title || ''} ${person['Board Role'] || ''} ${person.Name || ''}`.toLowerCase();
+          const inferredRoles = new Set<string>();
+          for (const [keyword, config] of Object.entries(ROLE_INFERENCE)) {
+            if (searchText.includes(keyword)) {
+              config.roles.forEach(r => inferredRoles.add(r.toLowerCase()));
+            }
+          }
+          // Every volunteer can at least be a mentor
+          inferredRoles.add('mentor');
+          return inferredRoles.has(value.toLowerCase()) ||
+                 Array.from(inferredRoles).some(r => r.includes(value.toLowerCase()));
         }
         if (category === "Type") {
           if (value === "Real Member") return !person.isMock;
